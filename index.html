@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interactive Coloring App</title>
   <style>
     html, body {
@@ -112,15 +113,25 @@
     let history = [];
     let mouseX = 0, mouseY = 0;
     let showCursor = false;
-    bgCanvas.width = 800;
-    bgCanvas.height = 600;
-    paintCanvas.width = 800;
-    paintCanvas.height = 600;
-    cursorCanvas.width = 800;
-    cursorCanvas.height = 600;
+    const dpr = window.devicePixelRatio || 1;
+    bgCanvas.width = bgCanvas.offsetWidth * dpr;
+    bgCanvas.height = bgCanvas.offsetHeight * dpr;
+    paintCanvas.width = paintCanvas.offsetWidth * dpr;
+    paintCanvas.height = paintCanvas.offsetHeight * dpr;
+    cursorCanvas.width = cursorCanvas.offsetWidth * dpr;
+    cursorCanvas.height = cursorCanvas.offsetHeight * dpr;
+    bgCtx.scale(dpr, dpr);
+    cursorCtx.scale(dpr, dpr);
+    paintCtx.scale(dpr, dpr);
 
+    // bgCanvas.width = 800;
+    // bgCanvas.height = 600;
+    // paintCanvas.width = 800;
+    // paintCanvas.height = 600;
+    // cursorCanvas.width = 800;
+    // cursorCanvas.height = 600;
 
-    console.log('script...')
+    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
     function getMousePos(e) {
       const rect = paintCanvas.getBoundingClientRect();
@@ -144,6 +155,12 @@
       history.push(paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height));
       if (history.length > 30) history.shift();
     }
+
+    paintCanvas.addEventListener('touchstart', handleStart, false);
+    paintCanvas.addEventListener('touchmove', handleMove, false);
+    paintCanvas.addEventListener('touchend', handleEnd, false);
+
+
 
     zoomControl.addEventListener('input', () => {
       scale = parseFloat(zoomControl.value);
