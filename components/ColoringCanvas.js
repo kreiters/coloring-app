@@ -237,13 +237,6 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
     const cursor = cursorRef.current
     if (!cursor) return
 
-    // Hide cursor on touch devices or if touch event
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
-    if (isTouchDevice || e.touches) {
-      cursor.style.display = 'none'
-      return
-    }
-
     const { clientX, clientY } = getEventCoordinates(e)
     
     // Calculate the actual brush size as it appears on screen (accounting for zoom)

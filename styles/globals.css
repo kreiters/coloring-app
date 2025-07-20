@@ -133,7 +133,10 @@ a {
     max-height: none;
   }
   
-  /* Hide cursor on touch devices - will be controlled by JavaScript */
+  /* Hide cursor on touch devices */
+  .custom-cursor {
+    display: none !important;
+  }
 }
 
 /* Additional mobile optimizations */
