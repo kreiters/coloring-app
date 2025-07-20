@@ -79,9 +79,12 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
     
-    // Simple coordinate transformation that accounts for canvas scaling
-    const x = ((clientX - rect.left) / rect.width) * canvasWidth
-    const y = ((clientY - rect.top) / rect.height) * canvasHeight
+    // Account for border (2px on each side from CSS)
+    const borderWidth = 2
+    
+    // Calculate coordinates relative to the actual canvas content area
+    const x = (clientX - rect.left - borderWidth) * (canvas.width / (rect.width - borderWidth * 2))
+    const y = (clientY - rect.top - borderWidth) * (canvas.height / (rect.height - borderWidth * 2))
     
     return { x, y }
   }

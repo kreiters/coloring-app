@@ -5,7 +5,9 @@
       "WebFetch(domain:kreiters.github.io)",
       "Bash(npm run build:*)",
       "WebFetch(domain:github.com)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
