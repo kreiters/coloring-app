@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="vh-100 d-flex flex-column">
       <Head>
-        <title>Coloring App</title>
+        <title>Coloring App - Interactive Drawing</title>
         <meta name="description" content="A responsive coloring app built with Next.js" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <link rel="icon" href="/favicon.ico" />
