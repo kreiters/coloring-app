@@ -27,14 +27,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     canvas.width = canvasWidth
     canvas.height = canvasHeight
 
-    // Debug: Log actual canvas dimensions
-    console.log('Canvas internal dimensions:', { width: canvas.width, height: canvas.height })
-    console.log('Canvas CSS dimensions:', { 
-      width: canvas.style.width, 
-      height: canvas.style.height,
-      clientWidth: canvas.clientWidth,
-      clientHeight: canvas.clientHeight
-    })
+    // Canvas dimensions are properly set
 
     // Set initial background
     ctx.fillStyle = 'white'
@@ -84,28 +77,20 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     setHistoryIndex(newHistory.length - 1)
   }
 
-  const getCanvasCoordinates = (clientX, clientY) => {
+  const getCanvasCoordinates = (e) => {
     const canvas = canvasRef.current
+    
+    // For mouse events, use offsetX/offsetY
+    if (e.offsetX !== undefined && e.offsetY !== undefined) {
+      return { x: e.offsetX, y: e.offsetY }
+    }
+    
+    // For touch events, calculate manually
     const rect = canvas.getBoundingClientRect()
+    const touch = e.touches?.[0] || e.changedTouches?.[0] || e
     
-    // Get the actual position relative to the canvas element
-    const canvasX = clientX - rect.left
-    const canvasY = clientY - rect.top
-    
-    // Use the actual client dimensions (which account for border)
-    const scaleX = canvas.width / canvas.clientWidth
-    const scaleY = canvas.height / canvas.clientHeight
-    
-    const x = canvasX * scaleX
-    const y = canvasY * scaleY
-    
-    // Debug logging to see what's happening
-    console.log('Client coords:', { clientX, clientY })
-    console.log('Canvas rect:', { left: rect.left, top: rect.top, width: rect.width, height: rect.height })
-    console.log('Canvas client dimensions:', { clientWidth: canvas.clientWidth, clientHeight: canvas.clientHeight })
-    console.log('Canvas relative:', { canvasX, canvasY })
-    console.log('Scale factors:', { scaleX, scaleY })
-    console.log('Final coords:', { x, y })
+    const x = (touch.clientX - rect.left) * (canvas.width / canvas.clientWidth)
+    const y = (touch.clientY - rect.top) * (canvas.height / canvas.clientHeight)
     
     return { x, y }
   }
@@ -120,11 +105,14 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     return { clientX: e.clientX, clientY: e.clientY }
   }
 
-  const updateCursor = (clientX, clientY) => {
+  const updateCursor = (e) => {
     const cursor = cursorRef.current
     if (!cursor) return
 
-    // Position cursor exactly at mouse location with brush size
+    // Position cursor exactly where the mouse is (not where drawing happens)
+    // The drawing alignment is correct, we just need cursor to show at mouse position
+    const { clientX, clientY } = getEventCoordinates(e)
+    
     cursor.style.left = `${clientX - brushSize / 2}px`
     cursor.style.top = `${clientY - brushSize / 2}px`
     cursor.style.width = `${brushSize}px`
@@ -145,9 +133,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     }
 
     setIsDrawing(true)
-    const coords = getCanvasCoordinates(clientX, clientY)
-    
-    console.log('Starting to draw at canvas coords:', coords)
+    const coords = getCanvasCoordinates(e)
     
     if (context) {
       context.beginPath()
@@ -156,12 +142,6 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
       context.lineJoin = 'round'
       context.strokeStyle = currentColor
       context.lineWidth = brushSize
-      
-      // Debug: Draw a small circle to show where we think we're drawing
-      const originalFillStyle = context.fillStyle
-      context.fillStyle = 'red'
-      context.fillRect(coords.x - 2, coords.y - 2, 4, 4)
-      context.fillStyle = originalFillStyle
     }
   }
 
@@ -183,12 +163,12 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
 
     // Only show cursor for mouse events (not touch)
     if (!e.touches) {
-      updateCursor(clientX, clientY)
+      updateCursor(e)
     }
 
     if (!isDrawing || !context) return
 
-    const coords = getCanvasCoordinates(clientX, clientY)
+    const coords = getCanvasCoordinates(e)
     context.lineTo(coords.x, coords.y)
     context.stroke()
   }
