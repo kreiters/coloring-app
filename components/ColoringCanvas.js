@@ -92,9 +92,9 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     const canvasX = clientX - rect.left
     const canvasY = clientY - rect.top
     
-    // Scale to canvas internal coordinates
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
+    // Use the actual client dimensions (which account for border)
+    const scaleX = canvas.width / canvas.clientWidth
+    const scaleY = canvas.height / canvas.clientHeight
     
     const x = canvasX * scaleX
     const y = canvasY * scaleY
@@ -102,6 +102,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     // Debug logging to see what's happening
     console.log('Client coords:', { clientX, clientY })
     console.log('Canvas rect:', { left: rect.left, top: rect.top, width: rect.width, height: rect.height })
+    console.log('Canvas client dimensions:', { clientWidth: canvas.clientWidth, clientHeight: canvas.clientHeight })
     console.log('Canvas relative:', { canvasX, canvasY })
     console.log('Scale factors:', { scaleX, scaleY })
     console.log('Final coords:', { x, y })
