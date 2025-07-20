@@ -79,11 +79,13 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
     
-    const scaleX = canvasWidth / (rect.width / zoom)
-    const scaleY = canvasHeight / (rect.height / zoom)
+    // Account for the CSS transform: scale and translate
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
     
-    const x = ((clientX - rect.left) / zoom - pan.x) * scaleX
-    const y = ((clientY - rect.top) / zoom - pan.y) * scaleY
+    // Adjust for zoom and pan
+    const x = ((clientX - centerX) / zoom - pan.x) + canvasWidth / 2
+    const y = ((clientY - centerY) / zoom - pan.y) + canvasHeight / 2
     
     return { x, y }
   }
@@ -100,12 +102,20 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
 
   const updateCursor = (clientX, clientY) => {
     const cursor = cursorRef.current
-    if (!cursor) return
+    const canvas = canvasRef.current
+    if (!cursor || !canvas) return
 
-    cursor.style.left = `${clientX - brushSize / 2}px`
-    cursor.style.top = `${clientY - brushSize / 2}px`
-    cursor.style.width = `${brushSize}px`
-    cursor.style.height = `${brushSize}px`
+    // Get canvas bounds to position cursor relative to viewport
+    const rect = canvas.getBoundingClientRect()
+    
+    // Calculate cursor size based on current zoom level
+    const cursorSize = brushSize * zoom
+    
+    // Position cursor at mouse location
+    cursor.style.left = `${clientX - cursorSize / 2}px`
+    cursor.style.top = `${clientY - cursorSize / 2}px`
+    cursor.style.width = `${cursorSize}px`
+    cursor.style.height = `${cursorSize}px`
     cursor.style.display = 'block'
   }
 
