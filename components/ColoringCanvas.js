@@ -121,7 +121,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
     }
     
     // Replace 'default-coloring.png' with your image filename
-    img.src = '/honor.png'
+    img.src = `${process.env.NODE_ENV === 'production' ? '/coloring-app' : ''}/honor.png`
   }
 
   const saveToHistory = (ctx) => {
