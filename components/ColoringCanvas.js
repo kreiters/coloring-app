@@ -23,9 +23,18 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     const ctx = canvas.getContext('2d')
     setContext(ctx)
 
-    // Set canvas size
+    // Set canvas internal size to match what we expect
     canvas.width = canvasWidth
     canvas.height = canvasHeight
+
+    // Debug: Log actual canvas dimensions
+    console.log('Canvas internal dimensions:', { width: canvas.width, height: canvas.height })
+    console.log('Canvas CSS dimensions:', { 
+      width: canvas.style.width, 
+      height: canvas.style.height,
+      clientWidth: canvas.clientWidth,
+      clientHeight: canvas.clientHeight
+    })
 
     // Set initial background
     ctx.fillStyle = 'white'
@@ -36,7 +45,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
 
     // Save initial state to history
     saveToHistory(ctx)
-  }, [])
+  }, [zoom])
 
   const loadDefaultImage = (ctx) => {
     // Create a simple default coloring page
@@ -137,6 +146,8 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     setIsDrawing(true)
     const coords = getCanvasCoordinates(clientX, clientY)
     
+    console.log('Starting to draw at canvas coords:', coords)
+    
     if (context) {
       context.beginPath()
       context.moveTo(coords.x, coords.y)
@@ -144,6 +155,12 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
       context.lineJoin = 'round'
       context.strokeStyle = currentColor
       context.lineWidth = brushSize
+      
+      // Debug: Draw a small circle to show where we think we're drawing
+      const originalFillStyle = context.fillStyle
+      context.fillStyle = 'red'
+      context.fillRect(coords.x - 2, coords.y - 2, 4, 4)
+      context.fillStyle = originalFillStyle
     }
   }
 
