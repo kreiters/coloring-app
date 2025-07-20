@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 
-const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, ref) => {
+const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fillMode }, ref) => {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const cursorRef = useRef(null)
@@ -11,10 +11,58 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 })
+  const [cursorCanvasPosition, setCursorCanvasPosition] = useState({ x: 0, y: 0 })
 
-  // Canvas dimensions
-  const canvasWidth = 800
-  const canvasHeight = 600
+  // Canvas dimensions - responsive
+  const [canvasWidth, setCanvasWidth] = useState(800)
+  const [canvasHeight, setCanvasHeight] = useState(600)
+  const [displayWidth, setDisplayWidth] = useState(800)
+  const [displayHeight, setDisplayHeight] = useState(600)
+
+  // Update canvas dimensions based on screen size
+  useEffect(() => {
+    const updateCanvasDimensions = () => {
+      const container = containerRef.current
+      if (!container) return
+
+      const containerWidth = container.clientWidth
+      const containerHeight = container.clientHeight
+      
+      // Calculate responsive dimensions while maintaining 4:3 aspect ratio
+      const aspectRatio = 4 / 3
+      let baseWidth, baseHeight
+      
+      if (containerWidth / containerHeight > aspectRatio) {
+        // Container is wider than canvas aspect ratio
+        baseHeight = Math.min(containerHeight * 0.85, 600)
+        baseWidth = baseHeight * aspectRatio
+      } else {
+        // Container is taller than canvas aspect ratio  
+        baseWidth = Math.min(containerWidth * 0.85, 800)
+        baseHeight = baseWidth / aspectRatio
+      }
+      
+      // Ensure minimum size for usability
+      baseWidth = Math.max(baseWidth, 300)
+      baseHeight = Math.max(baseHeight, 225)
+      
+      setDisplayWidth(baseWidth)
+      setDisplayHeight(baseHeight)
+      
+      // Keep internal canvas size consistent for high quality
+      setCanvasWidth(800)
+      setCanvasHeight(600)
+    }
+
+    updateCanvasDimensions()
+    window.addEventListener('resize', updateCanvasDimensions)
+    window.addEventListener('orientationchange', updateCanvasDimensions)
+    
+    return () => {
+      window.removeEventListener('resize', updateCanvasDimensions)
+      window.removeEventListener('orientationchange', updateCanvasDimensions)
+    }
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -38,7 +86,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
 
     // Save initial state to history
     saveToHistory(ctx)
-  }, [])
+  }, [zoom])
 
   const loadDefaultImage = (ctx) => {
     const img = new Image()
@@ -84,6 +132,79 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
     setHistoryIndex(newHistory.length - 1)
   }
 
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+      a: 255
+    } : null
+  }
+
+  const getPixelColor = (imageData, x, y, width) => {
+    const index = (y * width + x) * 4
+    return {
+      r: imageData.data[index],
+      g: imageData.data[index + 1],
+      b: imageData.data[index + 2],
+      a: imageData.data[index + 3]
+    }
+  }
+
+  const setPixelColor = (imageData, x, y, width, color) => {
+    const index = (y * width + x) * 4
+    imageData.data[index] = color.r
+    imageData.data[index + 1] = color.g
+    imageData.data[index + 2] = color.b
+    imageData.data[index + 3] = color.a
+  }
+
+  const colorsMatch = (color1, color2, tolerance = 0) => {
+    return Math.abs(color1.r - color2.r) <= tolerance &&
+           Math.abs(color1.g - color2.g) <= tolerance &&
+           Math.abs(color1.b - color2.b) <= tolerance &&
+           Math.abs(color1.a - color2.a) <= tolerance
+  }
+
+  const floodFill = (ctx, startX, startY, fillColor) => {
+    const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight)
+    const targetColor = getPixelColor(imageData, startX, startY, canvasWidth)
+    const newColor = hexToRgb(fillColor)
+    
+    if (colorsMatch(targetColor, newColor)) return
+
+    const tolerance = 15
+    const stack = [{x: startX, y: startY}]
+    const visited = new Set()
+
+    while (stack.length > 0) {
+      const {x, y} = stack.pop()
+      
+      if (x < 0 || x >= canvasWidth || y < 0 || y >= canvasHeight) continue
+      
+      const key = `${x},${y}`
+      if (visited.has(key)) continue
+      
+      const currentColor = getPixelColor(imageData, x, y, canvasWidth)
+      if (!colorsMatch(currentColor, targetColor, tolerance)) continue
+      
+      visited.add(key)
+      setPixelColor(imageData, x, y, canvasWidth, newColor)
+      
+      stack.push({x: x + 1, y: y})
+      stack.push({x: x - 1, y: y})
+      stack.push({x: x, y: y + 1})
+      stack.push({x: x, y: y - 1})
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+    
+    requestAnimationFrame(() => {
+      saveToHistory(ctx)
+    })
+  }
+
   const getCanvasCoordinates = (e) => {
     const canvas = canvasRef.current
     
@@ -116,14 +237,31 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
     const cursor = cursorRef.current
     if (!cursor) return
 
-    // Position cursor exactly where the mouse is (not where drawing happens)
-    // The drawing alignment is correct, we just need cursor to show at mouse position
     const { clientX, clientY } = getEventCoordinates(e)
     
-    cursor.style.left = `${clientX - brushSize / 2}px`
-    cursor.style.top = `${clientY - brushSize / 2}px`
-    cursor.style.width = `${brushSize}px`
-    cursor.style.height = `${brushSize}px`
+    // Calculate the actual brush size as it appears on screen (accounting for zoom)
+    const actualBrushSize = brushSize * zoom
+    
+    if (isPanning) {
+      // During panning, position cursor based on its canvas position + current pan
+      const screenX = cursorCanvasPosition.x + pan.x
+      const screenY = cursorCanvasPosition.y + pan.y
+      
+      cursor.style.left = `${screenX - actualBrushSize / 2}px`
+      cursor.style.top = `${screenY - actualBrushSize / 2}px`
+    } else {
+      // Normal mouse movement - follow mouse exactly
+      cursor.style.left = `${clientX - actualBrushSize / 2}px`
+      cursor.style.top = `${clientY - actualBrushSize / 2}px`
+      
+      // Calculate and store cursor position relative to canvas (accounting for current pan)
+      const canvasRelativeX = clientX - pan.x
+      const canvasRelativeY = clientY - pan.y
+      setCursorCanvasPosition({ x: canvasRelativeX, y: canvasRelativeY })
+    }
+    
+    cursor.style.width = `${actualBrushSize}px`
+    cursor.style.height = `${actualBrushSize}px`
     cursor.style.display = 'block'
   }
 
@@ -136,19 +274,28 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
     if ((e.touches && e.touches.length > 1) || e.button === 1 || e.button === 2) {
       setIsPanning(true)
       setLastPanPoint({ x: clientX, y: clientY })
+      // Store cursor position relative to canvas when panning starts
+      const canvasRelativeX = clientX - pan.x
+      const canvasRelativeY = clientY - pan.y
+      setCursorCanvasPosition({ x: canvasRelativeX, y: canvasRelativeY })
       return
     }
 
-    setIsDrawing(true)
     const coords = getCanvasCoordinates(e)
     
-    if (context) {
-      context.beginPath()
-      context.moveTo(coords.x, coords.y)
-      context.lineCap = 'round'
-      context.lineJoin = 'round'
-      context.strokeStyle = currentColor
-      context.lineWidth = brushSize
+    if (fillMode && context) {
+      floodFill(context, Math.floor(coords.x), Math.floor(coords.y), currentColor)
+    } else {
+      setIsDrawing(true)
+      
+      if (context) {
+        context.beginPath()
+        context.moveTo(coords.x, coords.y)
+        context.lineCap = 'round'
+        context.lineJoin = 'round'
+        context.strokeStyle = currentColor
+        context.lineWidth = brushSize
+      }
     }
   }
 
@@ -161,10 +308,15 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
       const deltaX = clientX - lastPanPoint.x
       const deltaY = clientY - lastPanPoint.y
       setPan(prev => ({
-        x: prev.x + deltaX / zoom,
-        y: prev.y + deltaY / zoom
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
       }))
       setLastPanPoint({ x: clientX, y: clientY })
+      
+      // Update cursor position during panning (for non-touch events)
+      if (!e.touches) {
+        updateCursor(e)
+      }
       return
     }
 
@@ -173,7 +325,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
       updateCursor(e)
     }
 
-    if (!isDrawing || !context) return
+    if (!isDrawing || !context || fillMode) return
 
     const coords = getCanvasCoordinates(e)
     context.lineTo(coords.x, coords.y)
@@ -281,8 +433,9 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, r
   }))
 
   const canvasStyle = {
-    width: `${800 * zoom}px`,
-    height: `${600 * zoom}px`
+    width: `${displayWidth * zoom}px`,
+    height: `${displayHeight * zoom}px`,
+    transform: `translate(${pan.x}px, ${pan.y}px)`
   }
 
   return (

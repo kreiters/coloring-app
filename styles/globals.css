@@ -6,6 +6,11 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   height: 100%;
   overflow: hidden;
+  touch-action: auto; /* Allow native touch behavior for page scrolling */
+  
+  /* Full screen support for native app feel */
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
 }
 
 a {
@@ -19,17 +24,26 @@ a {
 
 #__next {
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  touch-action: auto; /* Allow native touch behavior */
+  
+  /* Support for devices with notches/safe areas */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Canvas and drawing styles */
 .canvas-container {
   position: relative;
-  overflow: hidden;
+  overflow: auto;
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   background: #f8f9fa;
+  padding: 20px;
 }
 
 .drawing-canvas {
@@ -37,7 +51,7 @@ a {
   border-radius: 8px;
   background: white;
   cursor: none;
-  touch-action: none; /* Prevent default touch behaviors */
+  touch-action: none; /* Prevent default touch behaviors only on canvas */
   user-select: none; /* Prevent text selection */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -106,13 +120,37 @@ a {
     height: 44px; /* Make sliders easier to touch */
   }
   
-  /* Prevent zoom on double tap */
+  /* Allow native touch behavior for container (scrolling, etc.) */
   .canvas-container {
-    touch-action: manipulation;
+    touch-action: auto;
+    padding: 10px; /* Add some padding on mobile */
+    align-items: flex-start; /* Ensure canvas starts at top for better scrolling */
+  }
+  
+  /* Make canvas more mobile-friendly */
+  .drawing-canvas {
+    max-width: none;
+    max-height: none;
   }
   
   /* Hide cursor on touch devices */
   .custom-cursor {
     display: none !important;
   }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 480px) {
+  .canvas-container {
+    padding: 5px;
+  }
+  
+  .drawing-canvas {
+    border-width: 1px; /* Thinner border on small screens */
+  }
+}
+
+/* Hide Next.js development indicator */
+nextjs-portal {
+  display: none !important;
 }
