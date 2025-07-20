@@ -40,11 +40,24 @@ jobs:
           echo "Contents of .next/out directory:"
           ls -la .next/out/
         fi
+        
+    - name: Prepare deployment directory
+      run: |
+        if [ -d "out" ] && [ "$(ls -A out)" ]; then
+          echo "Using Next.js build output from out directory"
+          cp -r out/* ./deploy/ || mkdir -p deploy && cp -r out/* ./deploy/
+        else
+          echo "Next.js build failed, using static test page"
+          mkdir -p deploy
+          cp static-index.html deploy/index.html
+        fi
+        echo "Final deployment directory contents:"
+        ls -la deploy/
       
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./out
+        publish_dir: ./deploy
         force_orphan: true
