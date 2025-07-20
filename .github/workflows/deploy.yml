@@ -45,7 +45,8 @@ jobs:
       run: |
         if [ -d "out" ] && [ "$(ls -A out)" ]; then
           echo "Using Next.js build output from out directory"
-          cp -r out/* ./deploy/ || mkdir -p deploy && cp -r out/* ./deploy/
+          mkdir -p deploy
+          cp -r out/* ./deploy/
         else
           echo "Next.js build failed, using static test page"
           mkdir -p deploy
