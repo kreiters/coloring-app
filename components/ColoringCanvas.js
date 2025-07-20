@@ -86,7 +86,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
 
     // Save initial state to history
     saveToHistory(ctx)
-  }, [zoom])
+  }, [])
 
   const loadDefaultImage = (ctx) => {
     const img = new Image()
