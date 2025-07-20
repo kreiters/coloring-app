@@ -6,7 +6,7 @@ import Toolbar from '../components/Toolbar'
 export default function Home() {
   const [brushSize, setBrushSize] = useState(10)
   const [currentColor, setCurrentColor] = useState('#000000')
-  const [zoom, setZoom] = useState(1)
+  const [zoom, setZoom] = useState(1.6)
   const [fillMode, setFillMode] = useState(false)
   const canvasRef = useRef(null)
 
