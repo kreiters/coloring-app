@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "WebFetch(domain:kreiters.github.io)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }
