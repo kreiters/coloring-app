@@ -81,11 +81,13 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-    // Load default image
-    loadDefaultImage(ctx)
-
-    // Save initial state to history
-    saveToHistory(ctx)
+    // Try to load from session storage first, otherwise load default image
+    if (!loadFromSessionStorage(ctx)) {
+      // Load default image
+      loadDefaultImage(ctx)
+      // Save initial state to history
+      saveToHistory(ctx)
+    }
   }, [])
 
   const loadDefaultImage = (ctx) => {
@@ -130,6 +132,48 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
     newHistory.push(imageData)
     setHistory(newHistory)
     setHistoryIndex(newHistory.length - 1)
+    
+    // Save to session storage with a small delay to ensure canvas is updated
+    setTimeout(() => saveToSessionStorage(ctx), 10)
+  }
+
+  const saveToSessionStorage = (ctx) => {
+    try {
+      const canvas = canvasRef.current
+      if (canvas) {
+        const dataURL = canvas.toDataURL()
+        sessionStorage.setItem('coloringCanvas', dataURL)
+      }
+    } catch (error) {
+      console.warn('Could not save to session storage:', error)
+    }
+  }
+
+  const loadFromSessionStorage = (ctx) => {
+    try {
+      const savedData = sessionStorage.getItem('coloringCanvas')
+      if (savedData) {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = canvasRef.current
+          if (!canvas) return
+          
+          const actualWidth = canvas.width
+          const actualHeight = canvas.height
+          
+          ctx.clearRect(0, 0, actualWidth, actualHeight)
+          ctx.fillStyle = 'white'
+          ctx.fillRect(0, 0, actualWidth, actualHeight)
+          ctx.drawImage(img, 0, 0)
+          saveToHistory(ctx)
+        }
+        img.src = savedData
+        return true
+      }
+    } catch (error) {
+      console.warn('Could not load from session storage:', error)
+    }
+    return false
   }
 
   const hexToRgb = (hex) => {
@@ -382,6 +426,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
         const newIndex = historyIndex - 1
         context.putImageData(history[newIndex], 0, 0)
         setHistoryIndex(newIndex)
+        saveToSessionStorage(context)
       }
     },
     redo: () => {
@@ -389,6 +434,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
         const newIndex = historyIndex + 1
         context.putImageData(history[newIndex], 0, 0)
         setHistoryIndex(newIndex)
+        saveToSessionStorage(context)
       }
     },
     clear: () => {
@@ -397,6 +443,8 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
         context.fillRect(0, 0, canvasWidth, canvasHeight)
         loadDefaultImage(context)
         saveToHistory(context)
+        // Clear session storage when clearing canvas
+        sessionStorage.removeItem('coloringCanvas')
       }
     },
     importImage: (file) => {
