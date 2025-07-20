@@ -88,6 +88,16 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     return { x, y }
   }
 
+  const getEventCoordinates = (e) => {
+    // Handle both mouse and touch events
+    if (e.touches && e.touches.length > 0) {
+      return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }
+    }
+    return { clientX: e.clientX, clientY: e.clientY }
+  }
+
   const updateCursor = (clientX, clientY) => {
     const cursor = cursorRef.current
     if (!cursor) return
@@ -100,14 +110,19 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
   }
 
   const startDrawing = (e) => {
-    if (e.button === 1 || e.button === 2) { // Middle or right click for panning
+    e.preventDefault() // Prevent scrolling on touch devices
+    
+    const { clientX, clientY } = getEventCoordinates(e)
+    
+    // Handle panning for multi-touch or right/middle click
+    if ((e.touches && e.touches.length > 1) || e.button === 1 || e.button === 2) {
       setIsPanning(true)
-      setLastPanPoint({ x: e.clientX, y: e.clientY })
+      setLastPanPoint({ x: clientX, y: clientY })
       return
     }
 
     setIsDrawing(true)
-    const coords = getCanvasCoordinates(e.clientX, e.clientY)
+    const coords = getCanvasCoordinates(clientX, clientY)
     
     if (context) {
       context.beginPath()
@@ -120,22 +135,29 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
   }
 
   const draw = (e) => {
+    e.preventDefault() // Prevent scrolling on touch devices
+    
+    const { clientX, clientY } = getEventCoordinates(e)
+    
     if (isPanning) {
-      const deltaX = e.clientX - lastPanPoint.x
-      const deltaY = e.clientY - lastPanPoint.y
+      const deltaX = clientX - lastPanPoint.x
+      const deltaY = clientY - lastPanPoint.y
       setPan(prev => ({
         x: prev.x + deltaX / zoom,
         y: prev.y + deltaY / zoom
       }))
-      setLastPanPoint({ x: e.clientX, y: e.clientY })
+      setLastPanPoint({ x: clientX, y: clientY })
       return
     }
 
-    updateCursor(e.clientX, e.clientY)
+    // Only show cursor for mouse events (not touch)
+    if (!e.touches) {
+      updateCursor(clientX, clientY)
+    }
 
     if (!isDrawing || !context) return
 
-    const coords = getCanvasCoordinates(e.clientX, e.clientY)
+    const coords = getCanvasCoordinates(clientX, clientY)
     context.lineTo(coords.x, coords.y)
     context.stroke()
   }
@@ -156,6 +178,10 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
   const handleMouseLeave = () => {
     const cursor = cursorRef.current
     if (cursor) cursor.style.display = 'none'
+    stopDrawing()
+  }
+
+  const handleTouchCancel = () => {
     stopDrawing()
   }
 
@@ -235,6 +261,10 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+        onTouchCancel={handleTouchCancel}
       />
       <div ref={cursorRef} className="custom-cursor" />
     </div>

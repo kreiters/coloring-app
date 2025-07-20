@@ -37,6 +37,11 @@ a {
   border-radius: 8px;
   background: white;
   cursor: none;
+  touch-action: none; /* Prevent default touch behaviors */
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* Toolbar styles */
@@ -90,5 +95,24 @@ a {
   .color-option {
     width: 25px;
     height: 25px;
+  }
+  
+  /* Improve touch targets on mobile */
+  .btn {
+    min-height: 44px; /* Minimum touch target size */
+  }
+  
+  .form-range {
+    height: 44px; /* Make sliders easier to touch */
+  }
+  
+  /* Prevent zoom on double tap */
+  .canvas-container {
+    touch-action: manipulation;
+  }
+  
+  /* Hide cursor on touch devices */
+  .custom-cursor {
+    display: none !important;
   }
 }
