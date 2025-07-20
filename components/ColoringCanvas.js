@@ -12,6 +12,8 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
   const [isPanning, setIsPanning] = useState(false)
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 })
   const [cursorCanvasPosition, setCursorCanvasPosition] = useState({ x: 0, y: 0 })
+  const [isGesturing, setIsGesturing] = useState(false)
+  const gestureTimeoutRef = useRef(null)
 
   // Canvas dimensions - responsive
   const [canvasWidth, setCanvasWidth] = useState(800)
@@ -314,14 +316,32 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
     
     const { clientX, clientY } = getEventCoordinates(e)
     
-    // Handle panning for multi-touch or right/middle click
-    if ((e.touches && e.touches.length > 1) || e.button === 1 || e.button === 2) {
+    // Handle multi-touch gestures (pinch/pan)
+    if (e.touches && e.touches.length > 1) {
+      setIsGesturing(true)
+      clearTimeout(gestureTimeoutRef.current)
       setIsPanning(true)
       setLastPanPoint({ x: clientX, y: clientY })
       // Store cursor position relative to canvas when panning starts
       const canvasRelativeX = clientX - pan.x
       const canvasRelativeY = clientY - pan.y
       setCursorCanvasPosition({ x: canvasRelativeX, y: canvasRelativeY })
+      return
+    }
+    
+    // Handle right/middle click panning for desktop
+    if (e.button === 1 || e.button === 2) {
+      setIsPanning(true)
+      setLastPanPoint({ x: clientX, y: clientY })
+      // Store cursor position relative to canvas when panning starts
+      const canvasRelativeX = clientX - pan.x
+      const canvasRelativeY = clientY - pan.y
+      setCursorCanvasPosition({ x: canvasRelativeX, y: canvasRelativeY })
+      return
+    }
+    
+    // Prevent drawing if we're in gesture mode
+    if (isGesturing) {
       return
     }
 
@@ -379,6 +399,14 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom, fil
   const stopDrawing = () => {
     if (isPanning) {
       setIsPanning(false)
+      
+      // If we were in gesture mode, set a cooldown before allowing drawing again
+      if (isGesturing) {
+        clearTimeout(gestureTimeoutRef.current)
+        gestureTimeoutRef.current = setTimeout(() => {
+          setIsGesturing(false)
+        }, 200) // 200ms cooldown
+      }
       return
     }
 
