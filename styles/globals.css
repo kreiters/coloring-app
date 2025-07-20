@@ -51,7 +51,7 @@ a {
   border-radius: 8px;
   background: white;
   cursor: none;
-  touch-action: none; /* Prevent default touch behaviors only on canvas */
+  touch-action: pan-x pan-y pinch-zoom; /* Allow pan and pinch gestures on canvas */
   user-select: none; /* Prevent text selection */
   -webkit-user-select: none;
   -moz-user-select: none;
