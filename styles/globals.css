@@ -1,0 +1,94 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  height: 100%;
+  overflow: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#__next {
+  height: 100vh;
+}
+
+/* Canvas and drawing styles */
+.canvas-container {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.drawing-canvas {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  cursor: none;
+}
+
+/* Toolbar styles */
+.toolbar {
+  background: white;
+  border-bottom: 2px solid #dee2e6;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-option {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #dee2e6;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.active {
+  border-color: #007bff;
+  border-width: 3px;
+}
+
+/* Custom cursor */
+.custom-cursor {
+  position: absolute;
+  border: 2px solid #007bff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1000;
+  mix-blend-mode: difference;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 10px;
+  }
+  
+  .color-option {
+    width: 25px;
+    height: 25px;
+  }
+}
