@@ -24,41 +24,11 @@ jobs:
     - name: Build Next.js app
       run: npm run build
       
-    - name: Debug - List all directories
-      run: |
-        echo "Root directory:"
-        ls -la
-        echo "Looking for out directory:"
-        find . -name "out" -type d 2>/dev/null || echo "No out directory found"
-        echo "Looking for .next directory:"
-        find . -name ".next" -type d 2>/dev/null || echo "No .next directory found"
-        if [ -d "out" ]; then
-          echo "Contents of out directory:"
-          ls -la out/
-        fi
-        if [ -d ".next/out" ]; then
-          echo "Contents of .next/out directory:"
-          ls -la .next/out/
-        fi
-        
-    - name: Prepare deployment directory
-      run: |
-        if [ -d "out" ] && [ "$(ls -A out)" ]; then
-          echo "Using Next.js build output from out directory"
-          mkdir -p deploy
-          cp -r out/* ./deploy/
-        else
-          echo "Next.js build failed, using static test page"
-          mkdir -p deploy
-          cp static-index.html deploy/index.html
-        fi
-        echo "Final deployment directory contents:"
-        ls -la deploy/
-      
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./deploy
+        publish_dir: ./out
         force_orphan: true
+        cname: false

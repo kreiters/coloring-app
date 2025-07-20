@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm init:*)",
       "WebFetch(domain:kreiters.github.io)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }
