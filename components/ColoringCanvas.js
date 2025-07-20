@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 
-const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
+const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom, setZoom }, ref) => {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const cursorRef = useRef(null)
@@ -41,32 +41,39 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
   }, [zoom])
 
   const loadDefaultImage = (ctx) => {
-    // Create a simple default coloring page
-    ctx.strokeStyle = '#000000'
-    ctx.lineWidth = 2
-
-    // Draw a simple flower outline
-    ctx.beginPath()
-    // Center circle
-    ctx.arc(400, 300, 50, 0, 2 * Math.PI)
-    // Petals
-    for (let i = 0; i < 8; i++) {
-      const angle = (i * Math.PI) / 4
-      const x = 400 + Math.cos(angle) * 80
-      const y = 300 + Math.sin(angle) * 80
-      ctx.moveTo(400, 300)
-      ctx.arc(x, y, 30, 0, 2 * Math.PI)
+    const img = new Image()
+    img.onload = () => {
+      // Clear canvas with white background
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+      
+      // Calculate scaling to fit image in canvas while maintaining aspect ratio
+      const scale = Math.min(canvasWidth / img.width, canvasHeight / img.height)
+      const x = (canvasWidth - img.width * scale) / 2
+      const y = (canvasHeight - img.height * scale) / 2
+      
+      // Draw the image
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale)
+      
+      // Save to history after image loads
+      saveToHistory(ctx)
     }
-    // Stem
-    ctx.moveTo(400, 350)
-    ctx.lineTo(400, 500)
-    // Leaves
-    ctx.moveTo(380, 450)
-    ctx.quadraticCurveTo(350, 430, 360, 470)
-    ctx.moveTo(420, 450)
-    ctx.quadraticCurveTo(450, 430, 440, 470)
     
-    ctx.stroke()
+    img.onerror = () => {
+      // Fallback: draw simple outline if image fails to load
+      ctx.strokeStyle = '#000000'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.rect(200, 150, 400, 300)
+      ctx.moveTo(250, 200)
+      ctx.lineTo(550, 200)
+      ctx.moveTo(300, 250)
+      ctx.lineTo(500, 250)
+      ctx.stroke()
+    }
+    
+    // Replace 'default-coloring.png' with your image filename
+    img.src = '/honor.png'
   }
 
   const saveToHistory = (ctx) => {
@@ -196,6 +203,26 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     stopDrawing()
   }
 
+  const handleWheel = (e) => {
+    e.preventDefault() // Prevent page scroll
+    
+    // Get wheel direction (positive = zoom out, negative = zoom in)
+    const delta = e.deltaY
+    const zoomFactor = 0.1
+    
+    // Calculate new zoom level
+    let newZoom = zoom
+    if (delta > 0) {
+      // Zoom out
+      newZoom = Math.max(0.25, zoom - zoomFactor)
+    } else {
+      // Zoom in
+      newZoom = Math.min(3, zoom + zoomFactor)
+    }
+    
+    setZoom(newZoom)
+  }
+
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     undo: () => {
@@ -276,6 +303,7 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
         onTouchMove={draw}
         onTouchEnd={stopDrawing}
         onTouchCancel={handleTouchCancel}
+        onWheel={handleWheel}
       />
       <div ref={cursorRef} className="custom-cursor" />
     </div>

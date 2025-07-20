@@ -33,6 +33,7 @@ export default function Home() {
         brushSize={brushSize}
         currentColor={currentColor}
         zoom={zoom}
+        setZoom={setZoom}
       />
     </div>
   )
