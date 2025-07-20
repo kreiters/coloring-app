@@ -79,13 +79,9 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
     
-    // Account for the CSS transform: scale and translate
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
-    
-    // Adjust for zoom and pan
-    const x = ((clientX - centerX) / zoom - pan.x) + canvasWidth / 2
-    const y = ((clientY - centerY) / zoom - pan.y) + canvasHeight / 2
+    // Simple coordinate transformation that accounts for canvas scaling
+    const x = ((clientX - rect.left) / rect.width) * canvasWidth
+    const y = ((clientY - rect.top) / rect.height) * canvasHeight
     
     return { x, y }
   }
@@ -102,20 +98,13 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
 
   const updateCursor = (clientX, clientY) => {
     const cursor = cursorRef.current
-    const canvas = canvasRef.current
-    if (!cursor || !canvas) return
+    if (!cursor) return
 
-    // Get canvas bounds to position cursor relative to viewport
-    const rect = canvas.getBoundingClientRect()
-    
-    // Calculate cursor size based on current zoom level
-    const cursorSize = brushSize * zoom
-    
-    // Position cursor at mouse location
-    cursor.style.left = `${clientX - cursorSize / 2}px`
-    cursor.style.top = `${clientY - cursorSize / 2}px`
-    cursor.style.width = `${cursorSize}px`
-    cursor.style.height = `${cursorSize}px`
+    // Position cursor exactly at mouse location with brush size
+    cursor.style.left = `${clientX - brushSize / 2}px`
+    cursor.style.top = `${clientY - brushSize / 2}px`
+    cursor.style.width = `${brushSize}px`
+    cursor.style.height = `${brushSize}px`
     cursor.style.display = 'block'
   }
 
@@ -253,8 +242,8 @@ const ColoringCanvas = forwardRef(({ brushSize, currentColor, zoom }, ref) => {
   }))
 
   const canvasStyle = {
-    transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-    transformOrigin: 'center center'
+    width: `${800 * zoom}px`,
+    height: `${600 * zoom}px`
   }
 
   return (
